@@ -1,0 +1,3 @@
+auto_butcher = true
+
+autofight_stop = 0
