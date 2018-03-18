@@ -227,7 +227,6 @@ while True:
             html_element.send_keys(Keys.RETURN)
             time.sleep(1)
             html_element.send_keys('>')
-
         else:
             # Explore if nothing else is going on
             html_element.send_keys('o')
