@@ -1,3 +1,10 @@
+# Reads pixle data of the minimp canvas and tries to convert it into
+#   html tags I can read with the python script
+# All tags have the class name 'minimap_data' to fetch them
+# Tags ID is x/y coordinates, in that order, seperated by commas
+# Tags innerHTML is rgb data, also in that order and comma seperated 
+from PIL import Image
+
 from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.by import By
@@ -5,17 +12,26 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 import selenium.common.exceptions
 
-#def print_map(canvase):
-    
+MAP_WIDTH = 80
+MAP_HEIGHT = 70
+
+def print_map(minimap):
+    printme = Image.new('RGB', (MAP_WIDTH, MAP_HEIGHT), color=0)
+    pixels = printme.load()
+    for pixle in minimap:
+        coordinate = map(int, pixle.get_attribute('id').split(','))
+        color = map(int, pixle.get_attribute('innerHTML').split(','))
+        print coordinate, color
+        pixels[coordinate[0],coordinate[1]] = (color[0], color[1], color[2])
+    printme = printme.resize((MAP_WIDTH * 8, MAP_HEIGHT * 8))
+    printme.save('minimap.bmp')
 
 def get_map(browser):
     print "getting map"
     inject_script = open('read_minimap_inject.js', 'r').read()
     browser.execute_script(inject_script)
     minimap = browser.find_elements_by_class_name('minimap_data')
-    for pixle in minimap:
-        print pixle.get_attribute('id')
-    #print return_val
+    print_map(minimap)
     
 if __name__ == "__main__":
     # Open crawl, enter the game and try to get a map for test purposes
