@@ -35,6 +35,67 @@ MAP_FEATURES = {
 
 minimap = None
 
+# Returns every adjacent map feature
+# Return values in list: ( (coordinates), (map_features)) 
+def _get_neighbors(coordinate):
+    pixels = minimap.load()
+    width, height = minimap.size
+    neighbors = []
+    for x in (-1, 0, 1):
+        for y in (-1, 0, 1):
+            # Ignore our own tile
+            if x == y == 0:
+                continue
+            # Also ignore tiles that are off the map   
+            if (coordinate[0] + x < 0 or coordinate[0] + x > width or
+                   coordinate[1] + y < 0 or coordinate[1] + y > height):
+                continue
+            neighbor_coordinate = (coordinate[0] + x, coordinate[1] + y)
+            neighbor = (neighbor_coordinate,
+                        MAP_FEATURES[pixels[neighbor_coordinate]])
+            neighbors.append(neighbor)
+    return neighbors
+
+
+
+def _get_squared_distance(pos1, pos2):
+    a_squared = (pos2[0] - pos1[0]) * (pos2[0] - pos1[0])
+    b_squared = (pos2[1] - pos1[1]) * (pos2[1] - pos1[1])
+    return a_squared + b_squared
+
+
+def _get_a_node(coordinates):
+    pixels = minimap.load()
+    feature = MAP_FEATURES[pixels[coordinates]]
+    travel_cost = feature[FEATURE_ASCORE]
+    return {'travel_cost': travel_cost, 'best_path': [], 'best_cost': [],
+            'open_neighbors': [], 'checked_neighbors': [],
+            'coordinates': coordinates}
+
+            
+def _get_path(start, goal):
+    startingNode = _get_a_node(start)
+    openNodes = [start]
+    checkedNodes = []
+    
+    while len(openNodes) > 0:
+        # First get the closest node to the goal
+        closest_node = None
+        closest_dist = 0
+        for node in openNodes:
+            if closest_node = None:
+                closest_node = node
+                closest_dist = _get_squared_distance(node[coordinates], goal)
+            else:
+                dist = _get_squared_distance(node[coordinates], goal)
+                if dist < closest_dist:
+                    closest_dist = dist
+                    closest_node = node
+        # Now check each neighbor of this node and add them to the path 
+                
+            
+    
+
 # Finds all the tiles matching a given name/glyph/a* value
 def _get_map_feature(findme):
     return_coordinates = []
@@ -48,6 +109,7 @@ def _get_map_feature(findme):
             except KeyError:
                 print "unknown map feature rgb", pixels[x, y]
     return return_coordinates
+
 
 # Get the rgb values of every tile on the minimap and how often they
 #   occur
@@ -67,7 +129,7 @@ def _get_map_frequencies():
 
 # Inject code into the web page, download the minimap canvas as
 #   a png and save it
-def get_map(browser):
+def _get_map(browser):
     print "getting map"
     # Read the minimap as a png
     inject_script = open('read_minimap_inject.js', 'r').read()
@@ -89,7 +151,6 @@ def get_map(browser):
                                                   minimap.size[0])
     resize_percentage = minimap.size[1] / float(MAP_HEIGHT) 
     new_width = int(minimap.size[0] / resize_percentage)
-    print new_width, MAP_HEIGHT
     minimap = minimap.resize((new_width, MAP_HEIGHT))
     print "new map height: {0} new map width: {1}".format(minimap.size[1],
                                                           minimap.size[0])
@@ -144,5 +205,9 @@ if __name__ == "__main__":
     for stairs in downstairs:
         print stairs
     print "find player"
-    player = _get_map_feature('@')
-    print player[0]
+    player = _get_map_feature('@')[0]
+    print player
+    print "find player's neighbors"
+    neighbors = _get_neighbors(player)
+    for neighbor in neighbors:
+        print neighbor
