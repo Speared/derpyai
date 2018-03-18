@@ -105,7 +105,15 @@ def check_threats():
         print "no enemies found"
         return 0
 
-def stuck_check(more_message, lock):
+#lets us know if our health isn't full so we know when to rest
+def get_player_health_full():
+    with lock:
+        current_hp = browser.find_element_by_id("stats_hp").get_attribute("innerHTML")
+        max_hp = browser.find_element_by_id("stats_hp_max").get_attribute("innerHTML")
+    print "hp {0} out of {1}".format(current_hp, max_hp)
+    return current_hp == max_hp
+
+def stuck_check(more_message, menu, lock, html_element):
     #periodically check for messages that lock the game
     while True:
         #if the player died kill this thread
@@ -113,32 +121,40 @@ def stuck_check(more_message, lock):
         global dead_state
         if dead_state:
             print "killing thread"
-            return
-        #more message is hidden unless I need to make it go away.
-        #style changes to none when visible
+            return    
         with lock:
-            element = browser.find_element_by_tag_name('html')
+            print "html element", html_element
             print "checking stuck", more_message.get_attribute('style')
+            #more message is hidden unless I need to make it go away.
+            #style changes to none when visible
             if ('hidden' not in more_message.get_attribute('style') 
                     and 'none' not in more_message.get_attribute('style')):
                 print "more message, pressing enter"
-                element.send_keys(Keys.RETURN)
+                html_element.send_keys(Keys.RETURN)
+            #some things (shops) force the menu open
+            #so see if the menu is open then just close it 
+            if ('hidden' not in menu.get_attribute('style') 
+                    and 'none' not in menu.get_attribute('style')):
+                print "menu open, pressing escape"
+                html_element.send_keys(Keys.ESCAPE)
         message = get_last_message()
         print "last message:", message
         if "Increase (S)trength, (I)ntelligence, or (D)exterity?" in message:
             #if we got a stat up always level dex.
             with lock:
-                element.send_keys('D')
+                html_element.send_keys('D')
         if "You die..." in message:
             #when dead this will hit enter until we exit back to lobby
             with lock:
-                element.send_keys(Keys.RETURN)
+                html_element.send_keys(Keys.RETURN)
         time.sleep(1)
 
-def start_stuck_check(lock):
+def start_stuck_check():
     with lock:
         more_message = browser.find_element_by_id('more')
-    stuck_thread = threading.Thread(target=stuck_check, args=(more_message, lock,))
+        menu = browser.find_element_by_id('menu')
+        html_element = browser.find_element_by_tag_name('html')
+    stuck_thread = threading.Thread(target=stuck_check, args=(more_message, menu, lock, html_element, ))
     stuck_thread.setDaemon(True)
     stuck_thread.start()
         
@@ -147,17 +163,17 @@ dead_state = False
 #selenium is not thread safe
 #any selenium functions, even just getting attributes, need to be locked
 lock = threading.RLock()
-start_stuck_check(lock)           
+start_stuck_check()
 with lock:
     #get the html element to send key presses to the whole page
-    html_element = browser.find_element_by_tag_name('html')  
+    html_element = browser.find_element_by_tag_name('html')
 #main gameplay loop
 while True:
     #check if the player died, restart the game if so
     if dead_state:
         enter_game()
         dead_state = False
-        start_stuck_check(lock)
+        start_stuck_check()
     #record the current turn, so we know when the it goes up later
     #if this no longer exists we are dead and need to re-enter the game
     try:
@@ -167,9 +183,35 @@ while True:
         dead_state = True
         continue
     num_enemies = check_threats()
+    last_message = get_last_message()
+    #enter commands for the player
     with lock:
         if num_enemies > 0:
+            #auto fight when enemies are around
+            #will need to be replaced with my own pathfinding someday
             html_element.send_keys(Keys.TAB)
+        elif 'There is a lethal amount of poison in your body!' in last_message:
+            #we have already been poisoned to death, just wait to die
+            #I'll figure out item use later
+            html_element.send_keys('.')
+        elif not get_player_health_full():
+            #rest if we are hurt
+            html_element.send_keys('5')
+        elif 'explor' in last_message:
+            #check if we're done exploring or partially explored
+            #try to go down the nearest staircase if so
+            html_element.send_keys(Keys.LEFT_SHIFT + 'X')
+            #I don't have a better way to see if that commands
+            #   triggered at the moment, so just wait a second
+            #if the server lags enough this will mess up
+            time.sleep(1)
+            html_element.send_keys(Keys.LEFT_SHIFT + '>')
+            time.sleep(1)
+            html_element.send_keys(Keys.RETURN)
+            time.sleep(1)
+            html_element.send_keys('>')
+            
         else:
+            #explore if nothing else is going on
             html_element.send_keys('o')
     wait_for_turn_advancement(turncount)
