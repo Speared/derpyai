@@ -10,11 +10,11 @@ import selenium.common.exceptions
 
 def get_map(browser):
     print "getting map"
-    minimap = browser.find_element_by_id('minimap_overlay')
-    print minimap
-    
-    #inject_script = open('read_minimap_inject.js', 'r').read()
-    #return_val = browser.execute_script(inject_script)
+    inject_script = open('read_minimap_inject.js', 'r').read()
+    browser.execute_script(inject_script)
+    minimap = browser.find_elements_by_class_name('minimap_data')
+    for pixle in minimap:
+        print pixle.get_attribute('id')
     #print return_val
     
 if __name__ == "__main__":
