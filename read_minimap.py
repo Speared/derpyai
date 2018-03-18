@@ -4,6 +4,7 @@
 # Tags ID is x/y coordinates, in that order, seperated by commas
 # Tags innerHTML is rgb data, also in that order and comma seperated 
 import base64
+from collections import defaultdict
 
 from PIL import Image
 
@@ -17,21 +18,82 @@ import selenium.common.exceptions
 MAP_WIDTH = 80
 MAP_HEIGHT = 70
 
+# key = rgb value, value = (name, glyph, a* pathfinding score)
+FEATURE_NAME = 0
+FEATURE_GLYTH = 1
+FEATURE_ASCORE = 2
+MAP_FEATURES = {
+    (0, 255, 255): ("up stairway", "<", 1),
+    (119, 85, 68): ("door", "+", 2),
+    (0, 85, 68): ("item", "%", 1),
+    (102, 102, 102): ("wall", "0", -1),
+    (255, 0, 255): ("down stairway", ">", 1),
+    (51, 51, 51): ("floor", ".", 1),
+    (0, 0, 0): ("unexplored", " ", 10),
+    (255, 255, 255): ("player", "@", 0)
+    }
+
 minimap = None
-    
+
+# Finds all the tiles matching a given name/glyph/a* value
+def _get_map_feature(findme):
+    return_coordinates = []
+    pixels = minimap.load()
+    width, height = minimap.size
+    for x in range(width):
+        for y in range(height):
+            try:
+                if findme in MAP_FEATURES[pixels[x, y]]:
+                    return_coordinates.append((x, y))
+            except KeyError:
+                print "unknown map feature rgb", pixels[x, y]
+    return return_coordinates
+
+# Get the rgb values of every tile on the minimap and how often they
+#   occur
+# Should make it easier for me to work out which rgb value = which map
+#   feature
+def _get_map_frequencies():
+    pixels = minimap.load()
+    width, height = minimap.size
+    color_dict = defaultdict(int)
+    print "getting frequencies"
+    for x in range(width):
+        for y in range(height):
+            color_dict[pixels[x, y]] += 1
+    for rgb, frequency in color_dict.iteritems():
+        print rgb, '\t', frequency
+
+
+# Inject code into the web page, download the minimap canvas as
+#   a png and save it
 def get_map(browser):
     print "getting map"
     # Read the minimap as a png
     inject_script = open('read_minimap_inject.js', 'r').read()
+    global minimap
     minimap = browser.execute_script(inject_script)
     minimap = base64.b64decode(minimap)
     # TODO: could probably skip these steps and convert the png in 
     #   memory directly into an image
-    print minimap
     with open(r"images/minimap.png", 'wb') as f:
         f.write(minimap)
     # Open the new png as a PIL Image 
     minimap = Image.open("images/minimap.png").convert("RGB")
+    # Get the tilesize of the minimap, then scale down the map so
+    #   there's no wasted pixles 
+    inject_script = open('get_minimap_tile_size_inject.js', 'r').read()
+    tilesize = browser.execute_script(inject_script)
+    print "minimap tilesize:", tilesize
+    print "map height: {0} map width: {1}".format(minimap.size[1],
+                                                  minimap.size[0])
+    resize_percentage = minimap.size[1] / float(MAP_HEIGHT) 
+    new_width = int(minimap.size[0] / resize_percentage)
+    print new_width, MAP_HEIGHT
+    minimap = minimap.resize((new_width, MAP_HEIGHT))
+    print "new map height: {0} new map width: {1}".format(minimap.size[1],
+                                                          minimap.size[0])
+    minimap.save('minimap.bmp')
     
 if __name__ == "__main__":
     # Open crawl, enter the game and try to get a map for test purposes
@@ -72,4 +134,15 @@ if __name__ == "__main__":
                         (By.CLASS_NAME, 'game_message')))
     except selenium.common.exceptions.NoSuchElementException:
         pass
+
+    print "get map"
     get_map(browser)
+    #print "sample frequencies"
+    #_get_map_frequencies()
+    print "find down staircases"
+    downstairs = _get_map_feature('>')
+    for stairs in downstairs:
+        print stairs
+    print "find player"
+    player = _get_map_feature('@')
+    print player[0]
