@@ -3,6 +3,8 @@
 # All tags have the class name 'minimap_data' to fetch them
 # Tags ID is x/y coordinates, in that order, seperated by commas
 # Tags innerHTML is rgb data, also in that order and comma seperated 
+import base64
+
 from PIL import Image
 
 from selenium import webdriver
@@ -15,23 +17,22 @@ import selenium.common.exceptions
 MAP_WIDTH = 80
 MAP_HEIGHT = 70
 
-def print_map(minimap):
-    printme = Image.new('RGB', (MAP_WIDTH, MAP_HEIGHT), color=0)
-    pixels = printme.load()
-    for pixle in minimap:
-        coordinate = map(int, pixle.get_attribute('id').split(','))
-        color = map(int, pixle.get_attribute('innerHTML').split(','))
-        print coordinate, color
-        pixels[coordinate[0],coordinate[1]] = (color[0], color[1], color[2])
-    printme = printme.resize((MAP_WIDTH * 8, MAP_HEIGHT * 8))
-    printme.save('minimap.bmp')
-
+minimap = None
+    
 def get_map(browser):
     print "getting map"
+    # Read the minimap as a png
     inject_script = open('read_minimap_inject.js', 'r').read()
-    browser.execute_script(inject_script)
-    minimap = browser.find_elements_by_class_name('minimap_data')
-    print_map(minimap)
+    minimap = browser.execute_script(inject_script)
+    minimap = base64.b64decode(minimap)
+    # TODO: could probably skip these steps and convert the png in 
+    #   memory directly into an image
+    print minimap
+    with open(r"images/minimap.png", 'wb') as f:
+        f.write(minimap)
+    # Open the new png as a PIL Image 
+    minimap = Image.open("images/minimap.png").convert("RGB")
+    minimap.save('minimap.bmp')
     
 if __name__ == "__main__":
     # Open crawl, enter the game and try to get a map for test purposes
