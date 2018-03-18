@@ -20,7 +20,7 @@ login_info = dict(x.split(':') for x in login_info.split('\n'))
 # Enter username and password
 element = wait.until(EC.element_to_be_clickable((By.ID, 'username')))
 element.send_keys(login_info['username'])
-element = browser.find_element_by_name('password')  # Find the search box
+element = browser.find_element_by_name('password')
 element.send_keys(login_info['password'] + Keys.RETURN)
 
 
