@@ -32,7 +32,6 @@ def get_map(browser):
         f.write(minimap)
     # Open the new png as a PIL Image 
     minimap = Image.open("images/minimap.png").convert("RGB")
-    minimap.save('minimap.bmp')
     
 if __name__ == "__main__":
     # Open crawl, enter the game and try to get a map for test purposes
