@@ -14,7 +14,9 @@ class Behaviour(object):
 
     def _get_location(self):
         # @ glyph should always exist and there should only be one
-        return self.navigate.get_map_feature('@')[0]
+        location = self.navigate.get_map_feature('@')
+        return location[0]
+
  
  
     def _get_path(self, goal):
@@ -52,30 +54,28 @@ class Behaviour(object):
     # Takes one step in the right direction
     def move_to_tile(self, goal):
         mylocation = self._get_location()
-        with self.lock:
-            html_element = self.browser.find_element_by_tag_name('html')
-            if mylocation[0] > goal[0] and mylocation[1] < goal[1]:
-                html_element.send_keys('1')
-            elif mylocation[0] == goal[0] and mylocation[1] < goal[1]:
-                html_element.send_keys('2')
-            elif mylocation[0] < goal[0] and mylocation[1] < goal[1]:
-                html_element.send_keys('3')
-            elif mylocation[0] > goal[0] and mylocation[1] == goal[1]:
-                html_element.send_keys('4')
-            elif mylocation[0] == goal[0] and mylocation[1] == goal[1]:
-                html_element.send_keys('5')
-            elif mylocation[0] < goal[0] and mylocation[1] == goal[1]:
-                html_element.send_keys('6')
-            elif mylocation[0] > goal[0] and mylocation[1] > goal[1]:
-                html_element.send_keys('7')
-            elif mylocation[0] == goal[0] and mylocation[1] > goal[1]:
-                html_element.send_keys('8')
-            elif mylocation[0] < goal[0] and mylocation[1] > goal[1]:
-                html_element.send_keys('9')
+        html_element = self.browser.find_element_by_tag_name('html')
+        if mylocation[0] > goal[0] and mylocation[1] < goal[1]:
+            html_element.send_keys('1')
+        elif mylocation[0] == goal[0] and mylocation[1] < goal[1]:
+            html_element.send_keys('2')
+        elif mylocation[0] < goal[0] and mylocation[1] < goal[1]:
+            html_element.send_keys('3')
+        elif mylocation[0] > goal[0] and mylocation[1] == goal[1]:
+            html_element.send_keys('4')
+        elif mylocation[0] == goal[0] and mylocation[1] == goal[1]:
+            html_element.send_keys('5')
+        elif mylocation[0] < goal[0] and mylocation[1] == goal[1]:
+            html_element.send_keys('6')
+        elif mylocation[0] > goal[0] and mylocation[1] > goal[1]:
+            html_element.send_keys('7')
+        elif mylocation[0] == goal[0] and mylocation[1] > goal[1]:
+            html_element.send_keys('8')
+        elif mylocation[0] < goal[0] and mylocation[1] > goal[1]:
+            html_element.send_keys('9')
     
-    def __init__(self, browser, lock):
+    def __init__(self, browser):
         self.browser = browser
-        self.lock = lock
         self.mypath = None
         self.navigate = Navigate()
 
@@ -102,8 +102,8 @@ class FindDownStaircase(Behaviour):
             Behaviour._follow_path(self)
         
 
-    def __init__(self, browser, lock):
-         super(FindDownStaircase, self).__init__(browser, lock)
+    def __init__(self, browser):
+         super(FindDownStaircase, self).__init__(browser)
 
          
 # Placeholder behaviour for the many actions I havn't made behaviours yet
@@ -111,13 +111,12 @@ class Dummy(Behaviour):
     def Update(self):
         return
         
-    def __init__(self, browser, lock):
-         super(FindDownStaircase, self).__init__(browser, lock)
+    def __init__(self, browser):
+         super(FindDownStaircase, self).__init__(browser)
         
          
 def _tests(browser):
-    lock = threading.RLock()
-    behaviour = FindDownStaircase(browser, lock)
+    behaviour = FindDownStaircase(browser)
     
     while True:
         # Lag will mess this up if its too lower

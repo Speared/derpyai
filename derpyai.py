@@ -66,16 +66,15 @@ enter_game()
 ##############################################################################
 # Return the last message the game printed by the game
 def get_last_message():
-    with lock:
-        elements = browser.find_elements_by_class_name('game_message')
-        return (elements[len(elements) - 1]).get_attribute('innerHTML')
+    elements = browser.find_elements_by_class_name('game_message')
+    return (elements[len(elements) - 1]).get_attribute('innerHTML')
 
 
 # Takes the turn we started the game loop on
 # Returns when it has changed so we know when to take another turn
 def wait_for_turn_advancement(turncount):
     retry_count = 0
-    max_retrys = 2000
+    max_retrys = 200
     # Wait for the turn count to change before continuing
     while True:
         if not stuck_check():
@@ -87,9 +86,8 @@ def wait_for_turn_advancement(turncount):
             print "waited too long for next turn, unblocking"
             break
         try:
-            with lock:
-                newturncount = (browser.find_element_by_id('stats_time').
-                                get_attribute('innerHTML'))
+            newturncount = (browser.find_element_by_id('stats_time').
+                            get_attribute('innerHTML'))
             if turncount != newturncount:
                 break
         except selenium.common.exceptions.NoSuchElementException:
@@ -107,13 +105,19 @@ def wait_for_turn_advancement(turncount):
 # For now just return the total number of threats
 def check_threats():
     try:
-        with lock:
-            enemies = browser.find_elements_by_xpath(
-                            "//span[contains(@class, 'hostile')]")
-            print "number of enemies", len(enemies)
-            for enemy in enemies:
+        enemies = browser.find_elements_by_xpath(
+                        "//span[contains(@class, 'hostile')]")
+        print "number of enemies", len(enemies)
+        numstale = 0
+        for enemy in enemies:
+            try:
                 print enemy.get_attribute("class")
-            return len(enemies)
+            except selenium.common.exceptions.StaleElementReferenceException:
+                # Sometimes triggers right after killing an enemy
+                # Just make a note that this enemy dosn't exist
+                print "stale enemy found"
+                numstale += 1
+        return len(enemies) - numstale
     except selenium.common.exceptions.NoSuchElementException:
         print "no enemies found"
         return 0
@@ -121,11 +125,10 @@ def check_threats():
 
 # Lets us know if our health isn't full so we know when to rest
 def get_player_health_full():
-    with lock:
-        current_hp = (browser.find_element_by_id("stats_hp").
-                      get_attribute("innerHTML"))
-        max_hp = (browser.find_element_by_id("stats_hp_max").
+    current_hp = (browser.find_element_by_id("stats_hp").
                   get_attribute("innerHTML"))
+    max_hp = (browser.find_element_by_id("stats_hp_max").
+              get_attribute("innerHTML"))
     print "hp {0} out of {1}".format(current_hp, max_hp)
     return current_hp == max_hp
 
@@ -134,66 +137,74 @@ def stuck_check():
     # Check for messages that lock the game
     # If the player died kill this thread
     # Re-make it once back in the game
-    print "html element", html_element
-    more_message = browser.find_element_by_id('more')
-    menu = browser.find_element_by_id('menu')
-    print "checking stuck", more_message.get_attribute('style')
-    # More message is hidden unless I need to make it go away.
-    # Style changes to none when visible
-    if ('hidden' not in more_message.get_attribute('style') and
-            'none' not in more_message.get_attribute('style')):
-        print "more message, pressing enter"
-        html_element.send_keys(Keys.RETURN)
+    try:
+        print "html element", html_element
+        try:
+            more_message = browser.find_element_by_id('more')
+            menu = browser.find_element_by_id('menu')
+        except selenium.common.exceptions.NoSuchElementException:
+            # These elements being gone means we're in the lobby
+            # Flag that we need to re-enter game
+            # Return true so wait_for_turn_advancement stops blocking
+            global dead_state
+            dead_state = True
+            return True
+        print "checking stuck", more_message.get_attribute('style')
+        # More message is hidden unless I need to make it go away.
+        # Style changes to none when visible
+        if ('hidden' not in more_message.get_attribute('style') and
+                'none' not in more_message.get_attribute('style')):
+            print "more message, pressing enter"
+            html_element.send_keys(Keys.RETURN)
+            return True
+        # Some things (shops) force the menu open
+        # So see if the menu is open then just close it
+        if ('hidden' not in menu.get_attribute('style') and
+                'none' not in menu.get_attribute('style')):
+            print "menu open, pressing escape"
+            html_element.send_keys(Keys.ESCAPE)
+            return True
+        message = get_last_message()
+        print "last message:", message
+        if "Increase (S)trength, (I)ntelligence, or (D)exterity?" in message:
+            # If we got a stat up always level dex.
+            html_element.send_keys('D')
+            return True
+        if "You die..." in message:
+            # When dead this will hit enter until we exit back to lobby
+            html_element.send_keys(Keys.RETURN)
+            return True
+        return False
+    except selenium.common.exceptions.StaleElementReferenceException:
+        # Hitting this error means we're in the loby again
+        # Flag that we need to re-enter game
+        # Return true so wait_for_turn_advancement stops blocking
+        global dead_state
+        dead_state = True
         return True
-    # Some things (shops) force the menu open
-    # So see if the menu is open then just close it
-    if ('hidden' not in menu.get_attribute('style') and
-            'none' not in menu.get_attribute('style')):
-        print "menu open, pressing escape"
-        html_element.send_keys(Keys.ESCAPE)
-        return True
-    message = get_last_message()
-    print "last message:", message
-    if "Increase (S)trength, (I)ntelligence, or (D)exterity?" in message:
-        # If we got a stat up always level dex.
-        html_element.send_keys('D')
-        return True
-    if "You die..." in message:
-        # When dead this will hit enter until we exit back to lobby
-        html_element.send_keys(Keys.RETURN)
-        return True
-    return False
 
 
 # Tracks if the player dies and we're in the lobby again
 dead_state = False
-# Selenium is not thread safe
-# Any selenium functions, even just getting attributes, need to be locked
-lock = threading.RLock()
-#start_stuck_check()
-with lock:
-    # Get the html element to send key presses to the whole page
-    html_element = browser.find_element_by_tag_name('html')
+# Get the html element to send key presses to the whole page
+html_element = browser.find_element_by_tag_name('html')
 # Eventually all player actions should be wrapped up in states
 # With the state only being changed under some conditions
 # For now this is the only playerstate we have, so updating it when we
 #   need it is good enough
-state = FindDownStaircase(browser, lock)
+state = FindDownStaircase(browser)
 # Main gameplay loop
 while True:
-    with lock:
-        state.Update()
     # Check if the player died, restart the game if so
     if dead_state:
         enter_game()
         dead_state = False
-        state = FindDownStaircase(browser, lock)
+        state = FindDownStaircase(browser)
     # Record the current turn, so we know when the it goes up later
     # If this no longer exists we are dead and need to re-enter the game
     try:
-        with lock:
-            turncount = (browser.find_element_by_id('stats_time').
-                         get_attribute('innerHTML'))
+        turncount = (browser.find_element_by_id('stats_time').
+                     get_attribute('innerHTML'))
     except selenium.common.exceptions.NoSuchElementException:
         dead_state = True
         continue
@@ -203,23 +214,19 @@ while True:
     if num_enemies > 0:
         # Auto fight when enemies are around
         # Will need to be replaced with my own pathfinding someday
-        with lock:
-            html_element.send_keys(Keys.TAB)
+        html_element.send_keys(Keys.TAB)
     elif ('There is a lethal amount of poison in your body!'
             in last_message):
         # We have already been poisoned to death, just wait to die
         # I'll figure out item use later
-        with lock:
-            html_element.send_keys('.')
+        html_element.send_keys('.')
     elif not get_player_health_full():
         # Rest if we are hurt
-        with lock:
-            html_element.send_keys('5')
+        html_element.send_keys('5')
     elif 'explor' in last_message:
         state.Update()
     else:
         # Explore if nothing else is going on
-        with lock:
-            html_element.send_keys('o')
+        html_element.send_keys('o')
     
     wait_for_turn_advancement(turncount)

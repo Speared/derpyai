@@ -178,6 +178,9 @@ class Navigate(object):
         minimap = minimap.resize((new_width, self.MAP_HEIGHT))
         print "new map height: {0} new map width: {1}".format(minimap.size[1],
                                                               minimap.size[0])
+        # NOTE: the above resize is buggy and sometimes cuts off bits
+        #   of the map. I may need a better way to shrink the map
+        minimap.save('images/debug_map.bmp')
 
 
     def get_path(self, start, goal):
