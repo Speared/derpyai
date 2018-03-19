@@ -1,4 +1,3 @@
-import threading
 import time
 
 from selenium import webdriver
@@ -10,6 +9,7 @@ import selenium.common.exceptions
 
 from navigate import Navigate
 
+
 class Behaviour(object):
 
     def _get_location(self):
@@ -17,30 +17,28 @@ class Behaviour(object):
         location = self.navigate.get_map_feature('@')
         return location[0]
 
- 
- 
     def _get_path(self, goal):
         mylocation = self._get_location()
         self.mypath = self.navigate.get_path(mylocation, goal)
-    
+
     def _path_interupted(self):
         print "path interupted"
-        
+
     def _reached_path_goal(self):
         print "reached goal"
-    
+
     def Update(self):
         raise ValueError('unimplimented behavious update')
-    
-    # Each turn take a step towards the next path tile and pop it off 
+
+    # Each turn take a step towards the next path tile and pop it off
     #   the path
-    # Call one function when we reach the goal and another if we get 
+    # Call one function when we reach the goal and another if we get
     #   interupted
     def _follow_path(self):
         _mylocation = self._get_location()
         next_step = self.mypath.pop(0)
         if (abs(next_step[0] - _mylocation[0]) > 1 or
-              abs(next_step[1] - _mylocation[1]) > 1):
+                abs(next_step[1] - _mylocation[1]) > 1):
             self.mypath = None
             self._path_interupted()
         else:
@@ -48,7 +46,6 @@ class Behaviour(object):
             if len(self.mypath) == 0:
                 self.mypath = None
                 self._reached_path_goal()
-
 
     # Goal needs to be in the format (x, y)
     # Takes one step in the right direction
@@ -73,7 +70,7 @@ class Behaviour(object):
             html_element.send_keys('8')
         elif mylocation[0] < goal[0] and mylocation[1] > goal[1]:
             html_element.send_keys('9')
-    
+
     def __init__(self, browser):
         self.browser = browser
         self.mypath = None
@@ -85,7 +82,7 @@ class FindDownStaircase(Behaviour):
     def _reached_path_goal(self):
         html_element = self.browser.find_element_by_tag_name('html')
         html_element.send_keys('>')
-    
+
     def __path_interupted(self):
         print "path interupted"
 
@@ -94,40 +91,39 @@ class FindDownStaircase(Behaviour):
         print "in update"
         if self.mypath is None:
             goals = self.navigate.get_map_feature('>')
-            if len(goals) != 0: 
+            if len(goals) != 0:
                 Behaviour._get_path(self, goals[0])
             else:
                 print "no down stairs to path to"
         else:
             Behaviour._follow_path(self)
-        
 
     def __init__(self, browser):
-         super(FindDownStaircase, self).__init__(browser)
+        super(FindDownStaircase, self).__init__(browser)
 
-         
+
 # Placeholder behaviour for the many actions I havn't made behaviours yet
 class Dummy(Behaviour):
     def Update(self):
         return
-        
+
     def __init__(self, browser):
-         super(FindDownStaircase, self).__init__(browser)
-        
-         
+        super(Dummy, self).__init__(browser)
+
+
 def _tests(browser):
     behaviour = FindDownStaircase(browser)
-    
+
     while True:
         # Lag will mess this up if its too lower
         # When actually playing use the turncount change check in derpyai
         time.sleep(0.5)
         behaviour.Update()
-         
-# TODO: make this block of code in its own file so I don't 
-#   have to copy/paste it everywhere  
+
+# TODO: make this block of code in its own file so I don't
+#   have to copy/paste it everywhere
 if __name__ == "__main__":
-    
+
     # Open crawl, enter the game and try to get a map for test purposes
     # Copy/pasted from derpyai.py
     browser = webdriver.Chrome()
@@ -167,5 +163,3 @@ if __name__ == "__main__":
     except selenium.common.exceptions.NoSuchElementException:
         pass
     _tests(browser)
-    
-    

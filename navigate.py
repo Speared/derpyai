@@ -10,6 +10,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 import selenium.common.exceptions
 
+
 class Navigate(object):
 
     MAP_WIDTH = 80
@@ -36,7 +37,6 @@ class Navigate(object):
         }
     minimap = None
 
-
     # Returns every adjacent map feature
     # Return values in list: ( (coordinates), (map_features))
     def _get_neighbors(self, coordinate):
@@ -50,7 +50,7 @@ class Navigate(object):
                     continue
                 # Also ignore tiles that are off the map
                 if (coordinate[0] + x <= 0 or coordinate[0] + x >= width or
-                   coordinate[1] + y <= 0 or coordinate[1] + y >= height):
+                        coordinate[1] + y <= 0 or coordinate[1] + y >= height):
                     continue
                 neighbor_coordinate = (coordinate[0] + x, coordinate[1] + y)
                 neighbor = (neighbor_coordinate,
@@ -58,12 +58,10 @@ class Navigate(object):
                 neighbors.append(neighbor)
         return neighbors
 
-
     def _get_squared_distance(self, pos1, pos2):
         a_squared = (pos2[0] - pos1[0]) * (pos2[0] - pos1[0])
         b_squared = (pos2[1] - pos1[1]) * (pos2[1] - pos1[1])
         return a_squared + b_squared
-
 
     def _get_a_node(self, coordinates, parent):
         pixels = minimap.load()
@@ -74,8 +72,9 @@ class Navigate(object):
         if travel_cost == -1:
             return None
         neighbors = self._get_neighbors(coordinates)
-        new_node = {'travel_cost': travel_cost, 'best_path': [], 'best_cost': 0,
-                    'open_neighbors': neighbors, 'coordinates': coordinates}
+        new_node = {
+                   'travel_cost': travel_cost, 'best_path': [], 'best_cost': 0,
+                   'open_neighbors': neighbors, 'coordinates': coordinates}
         if parent is not None:
             best_path = list(parent['best_path'])
             best_path.append(coordinates)
@@ -83,7 +82,6 @@ class Navigate(object):
             best_cost = parent['best_cost'] + travel_cost
             new_node['best_cost'] = best_cost
         return new_node
-
 
     # Get the rgb values of every tile on the minimap and how often they
     #   occur
@@ -100,7 +98,6 @@ class Navigate(object):
         for rgb, frequency in color_dict.iteritems():
             print rgb, '\t', frequency
 
-
     def _debug_print_path(self, path):
         pixels = minimap.load()
         print len(path)
@@ -109,7 +106,6 @@ class Navigate(object):
             pixels[coordinate] = (255, 255, 0)
         width, height = minimap.size
         minimap.resize((width * 4, height * 4)).save('images/debug_path.bmp')
-
 
     def _tests(self, browser):
         print "\nget map"
@@ -135,7 +131,6 @@ class Navigate(object):
             else:
                 print "No path found"
 
-
     # Finds all the tiles matching a given name/glyph/a* value
     def get_map_feature(self, findme):
         return_coordinates = []
@@ -149,7 +144,6 @@ class Navigate(object):
                 except KeyError:
                     print "unknown map feature rgb", pixels[x, y]
         return return_coordinates
-
 
     # Inject code into the web page, download the minimap canvas as
     #   a png and save it
@@ -182,7 +176,6 @@ class Navigate(object):
         #   of the map. I may need a better way to shrink the map
         minimap.save('images/debug_map.bmp')
 
-
     def get_path(self, start, goal):
         startingNode = self._get_a_node(start, None)
         openNodes = [startingNode]
@@ -200,7 +193,8 @@ class Navigate(object):
                     if node['best_cost'] < cheapest_value:
                         cheapest_value = node['best_cost']
                         cheapest_node = node
-            # Now check each neighbor of this node, work with the closest open one
+            # Now check each neighbor of this node, work with the
+            #   closest open one
             # No unchecked neighbors left means we can remove
             #   this from the open list
             if len(cheapest_node['open_neighbors']) == 0:
@@ -211,7 +205,8 @@ class Navigate(object):
             for neighbor in cheapest_node['open_neighbors']:
                 if closest_neighbor is None:
                     closest_neighbor = neighbor
-                    closest_dist = self._get_squared_distance(neighbor[0], goal)
+                    closest_dist = self._get_squared_distance(neighbor[0],
+                                                              goal)
                 else:
                     dist = self._get_squared_distance(neighbor[0], goal)
                     if dist < closest_dist:
@@ -234,7 +229,8 @@ class Navigate(object):
             else:
                 # If this node already exists replace it
                 #   if the new path is better
-                if new_node['best_cost'] < checkedNodes[coordinates]['best_cost']:
+                if (new_node['best_cost'] <
+                   checkedNodes[coordinates]['best_cost']):
                     checkedNodes[coordinates] = new_node
                     openNodes.append(new_node)
         # If we made it here we ran out of paths to try
@@ -280,6 +276,6 @@ if __name__ == "__main__":
                         (By.CLASS_NAME, 'game_message')))
     except selenium.common.exceptions.NoSuchElementException:
         pass
-    
+
     myclass = Navigate()
     myclass._tests(browser)

@@ -1,5 +1,3 @@
-import threading
-
 import time
 
 from selenium import webdriver
@@ -137,6 +135,7 @@ def stuck_check():
     # Check for messages that lock the game
     # If the player died kill this thread
     # Re-make it once back in the game
+    global dead_state
     try:
         print "html element", html_element
         try:
@@ -146,7 +145,6 @@ def stuck_check():
             # These elements being gone means we're in the lobby
             # Flag that we need to re-enter game
             # Return true so wait_for_turn_advancement stops blocking
-            global dead_state
             dead_state = True
             return True
         print "checking stuck", more_message.get_attribute('style')
@@ -179,7 +177,6 @@ def stuck_check():
         # Hitting this error means we're in the loby again
         # Flag that we need to re-enter game
         # Return true so wait_for_turn_advancement stops blocking
-        global dead_state
         dead_state = True
         return True
 
@@ -228,5 +225,5 @@ while True:
     else:
         # Explore if nothing else is going on
         html_element.send_keys('o')
-    
+
     wait_for_turn_advancement(turncount)
