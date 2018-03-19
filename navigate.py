@@ -49,8 +49,8 @@ class Navigate(object):
                 if x == y == 0:
                     continue
                 # Also ignore tiles that are off the map
-                if (coordinate[0] + x < 0 or coordinate[0] + x > width or
-                   coordinate[1] + y < 0 or coordinate[1] + y > height):
+                if (coordinate[0] + x <= 0 or coordinate[0] + x >= width or
+                   coordinate[1] + y <= 0 or coordinate[1] + y >= height):
                     continue
                 neighbor_coordinate = (coordinate[0] + x, coordinate[1] + y)
                 neighbor = (neighbor_coordinate,
