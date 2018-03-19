@@ -1,8 +1,3 @@
-# Reads pixle data of the minimp canvas and tries to convert it into
-#   html tags I can read with the python script
-# All tags have the class name 'minimap_data' to fetch them
-# Tags ID is x/y coordinates, in that order, seperated by commas
-# Tags innerHTML is rgb data, also in that order and comma seperated
 import base64
 from collections import defaultdict
 
