@@ -33,7 +33,8 @@ class Navigate(object):
         (17, 68, 85): ("shallow water", "w", 5),
         (0, 17, 34): ("deep water", "W", -1),
         (170, 102, 68): ("trap", "~", 50),
-        (68, 102, 51): ("plant", "p", 25)
+        (68, 102, 51): ("plant", "p", 25),
+        (85, 34, 17): ("lava", "l", -1)
         }
     minimap = None
 
