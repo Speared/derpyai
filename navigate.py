@@ -167,15 +167,15 @@ def _debug_print_path(path):
 
 def _tests(browser):
     print "\nget map"
-    _get_map(browser)
+    get_map(browser)
     print "\nsample frequencies"
     _get_map_frequencies()
     print "\nfind down staircases"
-    downstairs = _get_map_feature('>')
+    downstairs = get_map_feature('>')
     for stairs in downstairs:
         print stairs
     print "\nfind player"
-    player = _get_map_feature('@')[0]
+    player = get_map_feature('@')[0]
     print player
     print "\nfind player's neighbors"
     neighbors = _get_neighbors(player)
