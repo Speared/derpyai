@@ -28,7 +28,7 @@ class Behaviour(object):
         print "reached goal"
 
     def Update(self):
-        raise ValueError('unimplimented behavious update')
+        raise ValueError('unimplimented behaviour update')
 
     # Each turn take a step towards the next path tile and pop it off
     #   the path

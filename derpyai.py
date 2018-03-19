@@ -133,8 +133,10 @@ def get_player_health_full():
 
 def stuck_check():
     # Check for messages that lock the game
-    # If the player died kill this thread
-    # Re-make it once back in the game
+    # Called by the function that locks our controlls while waiting for
+    #   the turncount to advance. Returns true if it did anything to 
+    #   un-stuck the game to flag that we can unlock the controlls and 
+    #   try moving again
     global dead_state
     try:
         print "html element", html_element
@@ -144,7 +146,6 @@ def stuck_check():
         except selenium.common.exceptions.NoSuchElementException:
             # These elements being gone means we're in the lobby
             # Flag that we need to re-enter game
-            # Return true so wait_for_turn_advancement stops blocking
             dead_state = True
             return True
         print "checking stuck", more_message.get_attribute('style')
@@ -176,7 +177,6 @@ def stuck_check():
     except selenium.common.exceptions.StaleElementReferenceException:
         # Hitting this error means we're in the loby again
         # Flag that we need to re-enter game
-        # Return true so wait_for_turn_advancement stops blocking
         dead_state = True
         return True
 
