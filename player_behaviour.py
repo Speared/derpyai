@@ -20,7 +20,6 @@ class Behaviour(object):
     def _get_path(self, goal):
         mylocation = self._get_location()
         self.mypath = self.navigate.get_path(mylocation, goal)
- 
     
     def _path_interupted(self):
         print "path interupted"
@@ -92,9 +91,10 @@ class FindDownStaircase(Behaviour):
 
     def Update(self):
         self.navigate.get_map(self.browser)
+        print "in update"
         if self.mypath is None:
             goals = self.navigate.get_map_feature('>')
-            if len(goals) != 0:
+            if len(goals) != 0: 
                 Behaviour._get_path(self, goals[0])
             else:
                 print "no down stairs to path to"
@@ -105,6 +105,16 @@ class FindDownStaircase(Behaviour):
     def __init__(self, browser, lock):
          super(FindDownStaircase, self).__init__(browser, lock)
 
+         
+# Placeholder behaviour for the many actions I havn't made behaviours yet
+class Dummy(Behaviour):
+    def Update(self):
+        return
+        
+    def __init__(self, browser, lock):
+         super(FindDownStaircase, self).__init__(browser, lock)
+        
+         
 def _tests(browser):
     lock = threading.RLock()
     behaviour = FindDownStaircase(browser, lock)

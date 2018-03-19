@@ -29,9 +29,10 @@ class Navigate(object):
         (51, 51, 51): ("floor", ".", 1),
         (0, 0, 0): ("unexplored", " ", 10),
         (255, 255, 255): ("player", "@", 1),
-        (17, 68, 85): ("shallow water", "^", 5),
-        (0, 17, 34): ("deep water", "`", -1),
-        (170, 102, 68): ("trap", "~", 50)
+        (17, 68, 85): ("shallow water", "w", 5),
+        (0, 17, 34): ("deep water", "W", -1),
+        (170, 102, 68): ("trap", "~", 50),
+        (68, 102, 51): ("plant", "p", 25)
         }
     minimap = None
 

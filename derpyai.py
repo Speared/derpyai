@@ -8,6 +8,8 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 import selenium.common.exceptions
 
+from player_behaviour import FindDownStaircase
+
 browser = webdriver.Chrome()
 wait = WebDriverWait(browser, 60)
 browser.get('http://crawl.berotato.org:8080/#lobby')
@@ -182,13 +184,21 @@ start_stuck_check()
 with lock:
     # Get the html element to send key presses to the whole page
     html_element = browser.find_element_by_tag_name('html')
+# Eventually all player actions should be wrapped up in states
+# With the state only being changed under some conditions
+# For now this is the only playerstate we have, so updating it when we
+#   need it is good enough
+state = FindDownStaircase(browser, lock)
 # Main gameplay loop
 while True:
+    with lock:
+        state.Update()
     # Check if the player died, restart the game if so
     if dead_state:
         enter_game()
         dead_state = False
         start_stuck_check()
+        state = FindDownStaircase(browser, lock)
     # Record the current turn, so we know when the it goes up later
     # If this no longer exists we are dead and need to re-enter the game
     try:
@@ -201,33 +211,26 @@ while True:
     num_enemies = check_threats()
     last_message = get_last_message()
     # Enter commands for the player
-    with lock:
-        if num_enemies > 0:
-            # Auto fight when enemies are around
-            # Will need to be replaced with my own pathfinding someday
+    if num_enemies > 0:
+        # Auto fight when enemies are around
+        # Will need to be replaced with my own pathfinding someday
+        with lock:
             html_element.send_keys(Keys.TAB)
-        elif ('There is a lethal amount of poison in your body!'
-                in last_message):
-            # We have already been poisoned to death, just wait to die
-            # I'll figure out item use later
+    elif ('There is a lethal amount of poison in your body!'
+            in last_message):
+        # We have already been poisoned to death, just wait to die
+        # I'll figure out item use later
+        with lock:
             html_element.send_keys('.')
-        elif not get_player_health_full():
-            # Rest if we are hurt
+    elif not get_player_health_full():
+        # Rest if we are hurt
+        with lock:
             html_element.send_keys('5')
-        elif 'explor' in last_message:
-            # Check if we're done exploring or partially explored
-            # Try to go down the nearest staircase if so
-            html_element.send_keys(Keys.LEFT_SHIFT + 'X')
-            # I don't have a better way to see if that commands
-            #   triggered at the moment, so just wait a second
-            # If the server lags enough this will mess up
-            time.sleep(1)
-            html_element.send_keys(Keys.LEFT_SHIFT + '>')
-            time.sleep(1)
-            html_element.send_keys(Keys.RETURN)
-            time.sleep(1)
-            html_element.send_keys('>')
-        else:
-            # Explore if nothing else is going on
+    elif 'explor' in last_message:
+        state.Update()
+    else:
+        # Explore if nothing else is going on
+        with lock:
             html_element.send_keys('o')
+    
     wait_for_turn_advancement(turncount)
