@@ -1,5 +1,6 @@
-import time
 import threading
+
+import time
 
 from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
@@ -74,9 +75,11 @@ def get_last_message():
 # Returns when it has changed so we know when to take another turn
 def wait_for_turn_advancement(turncount):
     retry_count = 0
-    max_retrys = 20
+    max_retrys = 2000
     # Wait for the turn count to change before continuing
     while True:
+        if not stuck_check():
+            return
         # For now there's a lot of ways this can get locked
         # So for now just try playing again if we've waited too long
         retry_count += 1
@@ -127,60 +130,47 @@ def get_player_health_full():
     return current_hp == max_hp
 
 
-def stuck_check(more_message, menu, lock, html_element):
-    # Periodically check for messages that lock the game
-    while True:
-        # If the player died kill this thread
-        # Re-make it once back in the game
-        global dead_state
-        if dead_state:
-            print "killing thread"
-            return
-        with lock:
-            print "html element", html_element
-            print "checking stuck", more_message.get_attribute('style')
-            # More message is hidden unless I need to make it go away.
-            # Style changes to none when visible
-            if ('hidden' not in more_message.get_attribute('style') and
-                    'none' not in more_message.get_attribute('style')):
-                print "more message, pressing enter"
-                html_element.send_keys(Keys.RETURN)
-            # Some things (shops) force the menu open
-            # So see if the menu is open then just close it
-            if ('hidden' not in menu.get_attribute('style') and
-                    'none' not in menu.get_attribute('style')):
-                print "menu open, pressing escape"
-                html_element.send_keys(Keys.ESCAPE)
-        message = get_last_message()
-        print "last message:", message
-        if "Increase (S)trength, (I)ntelligence, or (D)exterity?" in message:
-            # If we got a stat up always level dex.
-            with lock:
-                html_element.send_keys('D')
-        if "You die..." in message:
-            # When dead this will hit enter until we exit back to lobby
-            with lock:
-                html_element.send_keys(Keys.RETURN)
-        time.sleep(1)
+def stuck_check():
+    # Check for messages that lock the game
+    # If the player died kill this thread
+    # Re-make it once back in the game
+    print "html element", html_element
+    more_message = browser.find_element_by_id('more')
+    menu = browser.find_element_by_id('menu')
+    print "checking stuck", more_message.get_attribute('style')
+    # More message is hidden unless I need to make it go away.
+    # Style changes to none when visible
+    if ('hidden' not in more_message.get_attribute('style') and
+            'none' not in more_message.get_attribute('style')):
+        print "more message, pressing enter"
+        html_element.send_keys(Keys.RETURN)
+        return True
+    # Some things (shops) force the menu open
+    # So see if the menu is open then just close it
+    if ('hidden' not in menu.get_attribute('style') and
+            'none' not in menu.get_attribute('style')):
+        print "menu open, pressing escape"
+        html_element.send_keys(Keys.ESCAPE)
+        return True
+    message = get_last_message()
+    print "last message:", message
+    if "Increase (S)trength, (I)ntelligence, or (D)exterity?" in message:
+        # If we got a stat up always level dex.
+        html_element.send_keys('D')
+        return True
+    if "You die..." in message:
+        # When dead this will hit enter until we exit back to lobby
+        html_element.send_keys(Keys.RETURN)
+        return True
+    return False
 
-
-def start_stuck_check():
-    with lock:
-        more_message = browser.find_element_by_id('more')
-        menu = browser.find_element_by_id('menu')
-        html_element = browser.find_element_by_tag_name('html')
-    stuck_thread = threading.Thread(
-                    target=stuck_check,
-                    args=(more_message, menu, lock, html_element, ))
-    stuck_thread.setDaemon(True)
-    stuck_thread.start()
 
 # Tracks if the player dies and we're in the lobby again
 dead_state = False
 # Selenium is not thread safe
 # Any selenium functions, even just getting attributes, need to be locked
 lock = threading.RLock()
-start_stuck_check()
+#start_stuck_check()
 with lock:
     # Get the html element to send key presses to the whole page
     html_element = browser.find_element_by_tag_name('html')
@@ -197,7 +187,6 @@ while True:
     if dead_state:
         enter_game()
         dead_state = False
-        start_stuck_check()
         state = FindDownStaircase(browser, lock)
     # Record the current turn, so we know when the it goes up later
     # If this no longer exists we are dead and need to re-enter the game
