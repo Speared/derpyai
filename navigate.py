@@ -144,21 +144,6 @@ def _get_path(start, goal):
     return None
 
 
-# Finds all the tiles matching a given name/glyph/a* value
-def _get_map_feature(findme):
-    return_coordinates = []
-    pixels = minimap.load()
-    width, height = minimap.size
-    for x in range(width):
-        for y in range(height):
-            try:
-                if findme in MAP_FEATURES[pixels[x, y]]:
-                    return_coordinates.append((x, y))
-            except KeyError:
-                print "unknown map feature rgb", pixels[x, y]
-    return return_coordinates
-
-
 # Get the rgb values of every tile on the minimap and how often they
 #   occur
 # Should make it easier for me to work out which rgb value = which map
@@ -185,9 +170,49 @@ def _debug_print_path(path):
     minimap.resize((width * 4, height * 4)).save('images/debug_path.bmp')
 
 
+def _tests(browser):
+    print "\nget map"
+    _get_map(browser)
+    print "\nsample frequencies"
+    _get_map_frequencies()
+    print "\nfind down staircases"
+    downstairs = _get_map_feature('>')
+    for stairs in downstairs:
+        print stairs
+    print "\nfind player"
+    player = _get_map_feature('@')[0]
+    print player
+    print "\nfind player's neighbors"
+    neighbors = _get_neighbors(player)
+    for neighbor in neighbors:
+        print neighbor
+    print "\nfind a path to a staircase"
+    if len(downstairs) > 0:
+        path = _get_path(player, downstairs[0])
+        if path is not None:
+            _debug_print_path(path)
+        else:
+            print "No path found"
+
+
+# Finds all the tiles matching a given name/glyph/a* value
+def get_map_feature(findme):
+    return_coordinates = []
+    pixels = minimap.load()
+    width, height = minimap.size
+    for x in range(width):
+        for y in range(height):
+            try:
+                if findme in MAP_FEATURES[pixels[x, y]]:
+                    return_coordinates.append((x, y))
+            except KeyError:
+                print "unknown map feature rgb", pixels[x, y]
+    return return_coordinates
+
+
 # Inject code into the web page, download the minimap canvas as
 #   a png and save it
-def _get_map(browser):
+def get_map(browser):
     print "getting map"
     # Read the minimap as a png
     inject_script = open('read_minimap_inject.js', 'r').read()
@@ -213,30 +238,6 @@ def _get_map(browser):
     print "new map height: {0} new map width: {1}".format(minimap.size[1],
                                                           minimap.size[0])
 
-
-def _tests(browser):
-    print "\nget map"
-    _get_map(browser)
-    print "\nsample frequencies"
-    _get_map_frequencies()
-    print "\nfind down staircases"
-    downstairs = _get_map_feature('>')
-    for stairs in downstairs:
-        print stairs
-    print "\nfind player"
-    player = _get_map_feature('@')[0]
-    print player
-    print "\nfind player's neighbors"
-    neighbors = _get_neighbors(player)
-    for neighbor in neighbors:
-        print neighbor
-    print "\nfind a path to a staircase"
-    if len(downstairs) > 0:
-        path = _get_path(player, downstairs[0])
-        if path is not None:
-            _debug_print_path(path)
-        else:
-            print "No path found"
 
 if __name__ == "__main__":
     # Open crawl, enter the game and try to get a map for test purposes
