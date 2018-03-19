@@ -3,3 +3,4 @@
 *.bmp
 *.png
 *.pyc
+clean_whitespace.py
