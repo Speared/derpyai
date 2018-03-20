@@ -40,7 +40,6 @@ class Behaviour(object):
         next_step = self.mypath.pop(0)
         if (abs(next_step[0] - _mylocation[0]) > 1 or
                 abs(next_step[1] - _mylocation[1]) > 1):
-            self.mypath = None
             self._path_interupted()
         else:
             self.move_to_tile(next_step)
@@ -85,19 +84,21 @@ class FindDownStaircase(Behaviour):
         html_element = self.browser.find_element_by_tag_name('html')
         html_element.send_keys('>')
 
-    def __path_interupted(self):
-        print "path interupted"
+    def _path_interupted(self):
+        self.mypath = None
 
     def Update(self):
-        self.navigate.get_map(self.browser)
         print "in update"
         if self.mypath is None:
+            print "getting new path"
+            self.navigate.get_map()
             goals = self.navigate.get_map_feature('>')
             if len(goals) != 0:
                 Behaviour._get_path(self, goals[0])
             else:
                 print "no down stairs to path to"
         else:
+            print "following path"
             Behaviour._follow_path(self)
 
     def __init__(self, browser, navigate):

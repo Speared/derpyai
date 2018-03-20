@@ -8,6 +8,7 @@ from selenium.webdriver.support import expected_conditions as EC
 import selenium.common.exceptions
 
 from player_behaviour import FindDownStaircase
+from navigate import Navigate
 
 browser = webdriver.Chrome()
 wait = WebDriverWait(browser, 60)
@@ -185,18 +186,19 @@ def stuck_check():
 dead_state = False
 # Get the html element to send key presses to the whole page
 html_element = browser.find_element_by_tag_name('html')
+navigate = Navigate(browser)
 # Eventually all player actions should be wrapped up in states
 # With the state only being changed under some conditions
 # For now this is the only playerstate we have, so updating it when we
 #   need it is good enough
-state = FindDownStaircase(browser)
+state = FindDownStaircase(browser, navigate)
 # Main gameplay loop
 while True:
     # Check if the player died, restart the game if so
     if dead_state:
         enter_game()
         dead_state = False
-        state = FindDownStaircase(browser)
+        state = FindDownStaircase(browser, navigate)
     # Record the current turn, so we know when the it goes up later
     # If this no longer exists we are dead and need to re-enter the game
     try:

@@ -139,7 +139,6 @@ class Navigate(object):
     #
     # Needs to be called once per turn for accurate map info
     def get_map(self):
-        print "getting map"
         # Read the _minimap as a png
         inject_script = open('read_minimap_inject.js', 'r').read()
         global _minimap
@@ -155,16 +154,16 @@ class Navigate(object):
         #   down the map so there's no wasted pixles
         inject_script = open('get_minimap_tile_size_inject.js', 'r').read()
         tilesize = self.browser.execute_script(inject_script)
-        print "_minimap tilesize:", tilesize
-        print "map height: {0} map width: {1}".format(_minimap.size[1],
-                                                      _minimap.size[0])
-        resize_percentage = _minimap.size[1] / float(self.MAP_HEIGHT)
-        new_width = int(_minimap.size[0] / resize_percentage)
-        _minimap = _minimap.resize((new_width, self.MAP_HEIGHT))
-        print "new map height: {0} new map width: {1}".format(_minimap.size[1],
-                                                              _minimap.size[0])
-        # NOTE: the above resize is buggy and sometimes cuts off bits
-        #   of the map. I may need a better way to shrink the map
+        width, height = _minimap.size
+        x_tiles = width / tilesize
+        y_tiles = height / tilesize
+        shrunk_minimap = Image.new("RGB", (x_tiles, y_tiles))
+        map_pixels = _minimap.load()
+        shrunk_pixles = shrunk_minimap.load()
+        for x in range(x_tiles):
+            for y in range(y_tiles):
+                shrunk_pixles[(x, y)] = map_pixels[(x * tilesize, y * tilesize)]
+        _minimap = shrunk_minimap
         _minimap.save('images/debug_map.bmp')
 
     def get_path(self, start, goal):
