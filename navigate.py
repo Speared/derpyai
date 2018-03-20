@@ -39,7 +39,9 @@ class Navigate(object):
         (68, 102, 51): ("plant", "p", 25),
         (85, 34, 17): ("lava", "l", -1)
         }
-    _minimap = None
+
+    #_minimap = None
+    #_player_location = (0, 0)
 
     # Returns every adjacent map feature
     # Return values in list: ( (coordinates), (map_features))
@@ -119,6 +121,26 @@ class Navigate(object):
         _minimap.resize((width * 4, height * 4)).save(filename)
         # Undo changes to the map
         self.get_map()
+
+    def get_player_location(self):
+        # Search for the player, starting with the tile they were in
+        #   last time we checked, then tiles adjactent to their last position,
+        #   then finally just search the whole map
+        #global _player_location
+        pixels = _minimap.load()
+        player = (255, 255, 255)
+        # If the player hasn't moved no need to update anything
+        if pixels[self.player_location] == player:
+            return self.player_location
+        neighbors = self._get_neighbors(self.player_location)
+        for neighbor in neighbors:
+            # neighbor[0] is the coordinates
+            if pixels[neighbor[0]] == player:
+                self.player_location = neighbor[0]
+                return self.player_location
+        self.player_location = self.get_map_feature('@')[0]
+        return self.player_location
+        
 
     # Finds all the tiles matching a given name/glyph/a* value
     def get_map_feature(self, findme):
@@ -228,6 +250,7 @@ class Navigate(object):
 
     def __init__(self, browser):
         self.browser = browser
+        self.player_location = (0, 0)
 
 
 if __name__ == "__main__":

@@ -96,7 +96,7 @@ def wait_for_turn_advancement(turncount):
             # Also triggers when the game exits sometimes
             break
         time.sleep(0.1)
-    print "Next turn!"
+    print "Next turn!", newturncount
 
 
 # Return if a threat is nearby
@@ -106,19 +106,16 @@ def check_threats():
     try:
         enemies = browser.find_elements_by_xpath(
                         "//span[contains(@class, 'hostile')]")
-        print "number of enemies", len(enemies)
         numstale = 0
         for enemy in enemies:
             try:
-                print enemy.get_attribute("class")
+                test_stale = enemy.get_attribute("class")
             except selenium.common.exceptions.StaleElementReferenceException:
                 # Sometimes triggers right after killing an enemy
                 # Just make a note that this enemy dosn't exist
-                print "stale enemy found"
                 numstale += 1
         return len(enemies) - numstale
     except selenium.common.exceptions.NoSuchElementException:
-        print "no enemies found"
         return 0
 
 
@@ -128,7 +125,6 @@ def get_player_health_full():
                   get_attribute("innerHTML"))
     max_hp = (browser.find_element_by_id("stats_hp_max").
               get_attribute("innerHTML"))
-    print "hp {0} out of {1}".format(current_hp, max_hp)
     return current_hp == max_hp
 
 
@@ -140,7 +136,6 @@ def stuck_check():
     #   try moving again
     global dead_state
     try:
-        print "html element", html_element
         try:
             more_message = browser.find_element_by_id('more')
             menu = browser.find_element_by_id('menu')
@@ -149,7 +144,6 @@ def stuck_check():
             # Flag that we need to re-enter game
             dead_state = True
             return True
-        print "checking stuck", more_message.get_attribute('style')
         # More message is hidden unless I need to make it go away.
         # Style changes to none when visible
         if ('hidden' not in more_message.get_attribute('style') and
@@ -165,7 +159,6 @@ def stuck_check():
             html_element.send_keys(Keys.ESCAPE)
             return True
         message = get_last_message()
-        print "last message:", message
         if "Increase (S)trength, (I)ntelligence, or (D)exterity?" in message:
             # If we got a stat up always level dex.
             html_element.send_keys('D')

@@ -13,13 +13,8 @@ from setup_tests import SetupTests
 
 class Behaviour(object):
 
-    def _get_location(self):
-        # @ glyph should always exist and there should only be one
-        location = self.navigate.get_map_feature('@')
-        return location[0]
-
     def _get_path(self, goal):
-        mylocation = self._get_location()
+        mylocation = self.navigate.get_player_location()
         self.mypath = self.navigate.get_path(mylocation, goal)
 
     def _path_interupted(self):
@@ -36,10 +31,10 @@ class Behaviour(object):
     # Call one function when we reach the goal and another if we get
     #   interupted
     def _follow_path(self):
-        _mylocation = self._get_location()
+        mylocation = self.navigate.get_player_location()
         next_step = self.mypath.pop(0)
-        if (abs(next_step[0] - _mylocation[0]) > 1 or
-                abs(next_step[1] - _mylocation[1]) > 1):
+        if (abs(next_step[0] - mylocation[0]) > 1 or
+                abs(next_step[1] - mylocation[1]) > 1):
             self._path_interupted()
         else:
             self.move_to_tile(next_step)
@@ -50,7 +45,7 @@ class Behaviour(object):
     # Goal needs to be in the format (x, y)
     # Takes one step in the right direction
     def move_to_tile(self, goal):
-        mylocation = self._get_location()
+        mylocation = self.navigate.get_player_location()
         print "my location", mylocation
         html_element = self.browser.find_element_by_tag_name('html')
         if mylocation[0] > goal[0] and mylocation[1] < goal[1]:
