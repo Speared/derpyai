@@ -1,5 +1,6 @@
 import base64
 from collections import defaultdict
+import time
 
 from PIL import Image
 
@@ -38,13 +39,13 @@ class Navigate(object):
         (68, 102, 51): ("plant", "p", 25),
         (85, 34, 17): ("lava", "l", -1)
         }
-    minimap = None
+    _minimap = None
 
     # Returns every adjacent map feature
     # Return values in list: ( (coordinates), (map_features))
     def _get_neighbors(self, coordinate):
-        pixels = minimap.load()
-        width, height = minimap.size
+        pixels = _minimap.load()
+        width, height = _minimap.size
         neighbors = []
         for x in (-1, 0, 1):
             for y in (-1, 0, 1):
@@ -67,7 +68,7 @@ class Navigate(object):
         return a_squared + b_squared
 
     def _get_a_node(self, coordinates, parent):
-        pixels = minimap.load()
+        pixels = _minimap.load()
         feature = self.MAP_FEATURES[pixels[coordinates]]
         travel_cost = feature[self.FEATURE_ASCORE]
         # If travel cost is -1 this isn't a valid path tile
@@ -86,13 +87,14 @@ class Navigate(object):
             new_node['best_cost'] = best_cost
         return new_node
 
-    # Get the rgb values of every tile on the minimap and how often they
-    #   occur
-    # Should make it easier for me to work out which rgb value = which map
-    #   feature
+    # Get the rgb values of every tile on the
+    #   _minimap and how often they occur
+    #
+    # Should make it easier for me to work out
+    #   which rgb value = which map feature
     def _get_map_frequencies(self):
-        pixels = minimap.load()
-        width, height = minimap.size
+        pixels = _minimap.load()
+        width, height = _minimap.size
         color_dict = defaultdict(int)
         print "getting frequencies"
         for x in range(width):
@@ -102,19 +104,27 @@ class Navigate(object):
             print rgb, '\t', frequency
 
     def _debug_print_path(self, path):
-        pixels = minimap.load()
+        pixels = _minimap.load()
         print len(path)
         for coordinate in path:
             print coordinate
             pixels[coordinate] = (255, 255, 0)
-        width, height = minimap.size
-        minimap.resize((width * 4, height * 4)).save('images/debug_path.bmp')
+        width, height = _minimap.size
+        _minimap.resize((width * 4, height * 4)).save('images/debug_path.bmp')
+        # Undo changes to the map
+        self.get_map()
+        
+    def _debug_print_map(self, filename):
+        width, height = _minimap.size
+        _minimap.resize((width * 4, height * 4)).save(filename)
+        # Undo changes to the map
+        self.get_map()
 
     # Finds all the tiles matching a given name/glyph/a* value
     def get_map_feature(self, findme):
         return_coordinates = []
-        pixels = minimap.load()
-        width, height = minimap.size
+        pixels = _minimap.load()
+        width, height = _minimap.size
         for x in range(width):
             for y in range(height):
                 try:
@@ -124,36 +134,38 @@ class Navigate(object):
                     print "unknown map feature rgb", pixels[x, y]
         return return_coordinates
 
-    # Inject code into the web page, download the minimap canvas as
-    #   a png and save it
-    def get_map(self, browser):
+    # Inject code into the web page,
+    #   download the _minimap canvas as a png and save it
+    #
+    # Needs to be called once per turn for accurate map info
+    def get_map(self):
         print "getting map"
-        # Read the minimap as a png
+        # Read the _minimap as a png
         inject_script = open('read_minimap_inject.js', 'r').read()
-        global minimap
-        minimap = browser.execute_script(inject_script)
-        minimap = base64.b64decode(minimap)
-        # TODO: could probably skip these steps and convert the png in
-        #   memory directly into an image
-        with open(r"images/minimap.png", 'wb') as f:
-            f.write(minimap)
+        global _minimap
+        _minimap = self.browser.execute_script(inject_script)
+        _minimap = base64.b64decode(_minimap)
+        # TODO: could probably skip these steps and convert
+        #   the png in memory directly into an image
+        with open(r"images/_minimap.png", 'wb') as f:
+            f.write(_minimap)
         # Open the new png as a PIL Image
-        minimap = Image.open("images/minimap.png").convert("RGB")
-        # Get the tilesize of the minimap, then scale down the map so
-        #   there's no wasted pixles
+        _minimap = Image.open("images/_minimap.png").convert("RGB")
+        # Get the tilesize of the _minimap, then scale
+        #   down the map so there's no wasted pixles
         inject_script = open('get_minimap_tile_size_inject.js', 'r').read()
-        tilesize = browser.execute_script(inject_script)
-        print "minimap tilesize:", tilesize
-        print "map height: {0} map width: {1}".format(minimap.size[1],
-                                                      minimap.size[0])
-        resize_percentage = minimap.size[1] / float(self.MAP_HEIGHT)
-        new_width = int(minimap.size[0] / resize_percentage)
-        minimap = minimap.resize((new_width, self.MAP_HEIGHT))
-        print "new map height: {0} new map width: {1}".format(minimap.size[1],
-                                                              minimap.size[0])
+        tilesize = self.browser.execute_script(inject_script)
+        print "_minimap tilesize:", tilesize
+        print "map height: {0} map width: {1}".format(_minimap.size[1],
+                                                      _minimap.size[0])
+        resize_percentage = _minimap.size[1] / float(self.MAP_HEIGHT)
+        new_width = int(_minimap.size[0] / resize_percentage)
+        _minimap = _minimap.resize((new_width, self.MAP_HEIGHT))
+        print "new map height: {0} new map width: {1}".format(_minimap.size[1],
+                                                              _minimap.size[0])
         # NOTE: the above resize is buggy and sometimes cuts off bits
         #   of the map. I may need a better way to shrink the map
-        minimap.save('images/debug_map.bmp')
+        _minimap.save('images/debug_map.bmp')
 
     def get_path(self, start, goal):
         startingNode = self._get_a_node(start, None)
@@ -223,7 +235,7 @@ if __name__ == "__main__":
     browser = SetupTests.setup()
     navigate = Navigate(browser)
     print "\nget map"
-    navigate.get_map(browser)
+    navigate.get_map()
     print "\nsample frequencies"
     navigate._get_map_frequencies()
     print "\nfind down staircases"
@@ -244,3 +256,18 @@ if __name__ == "__main__":
             navigate._debug_print_path(path)
         else:
             print "No path found"
+    turncount = (browser.find_element_by_id('stats_time').
+                get_attribute('innerHTML'))
+    while True:
+        newturncount = (browser.find_element_by_id('stats_time').
+                        get_attribute('innerHTML'))
+        if turncount != newturncount:
+            turncount = newturncount
+            # Spam the console so I don't forget 
+            #   what might be lagging the game
+            print "!!Printing map!!"
+            filename = 'images/minimap_prints/{0}.bmp'.format(turncount)
+            navigate._debug_print_map(filename)
+        time.sleep(0.1)
+             
+        
