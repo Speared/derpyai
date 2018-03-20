@@ -214,7 +214,7 @@ class Navigate(object):
                     openNodes.append(new_node)
         # If we made it here we ran out of paths to try
         return None
-    
+
     def __init__(self, browser):
         self.browser = browser
 

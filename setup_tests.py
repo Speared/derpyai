@@ -47,4 +47,4 @@ class SetupTests():
         except selenium.common.exceptions.NoSuchElementException:
             pass
         return browser
-    
+

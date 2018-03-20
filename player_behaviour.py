@@ -112,7 +112,7 @@ class Dummy(Behaviour):
     def __init__(self, browser):
         super(Dummy, self).__init__(browser)
 
-  
+
 if __name__ == "__main__":
     browser = SetupTests.setup()
     navigate = Navigate(browser)
