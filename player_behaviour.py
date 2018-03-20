@@ -106,6 +106,7 @@ class FindDownStaircase(Behaviour):
 
 # Placeholder behaviour for the many actions I havn't made behaviours yet
 class Dummy(Behaviour):
+
     def Update(self):
         return
 
