@@ -1,6 +1,7 @@
-
+.idea/*
 *.log
 *.bmp
 *.png
 *.pyc
 clean_whitespace.py
+open_pycharm.bat
