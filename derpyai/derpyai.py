@@ -1,5 +1,7 @@
+# Import built-in modules
 import time
 
+# Import third-party modules
 from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.by import By
@@ -7,6 +9,8 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 import selenium.common.exceptions
 
+# Import local modules
+from login import get_login
 from player_behaviour import FindDownStaircase
 from navigate import Navigate
 
@@ -17,8 +21,7 @@ browser.get('http://crawl.berotato.org:8080/#lobby')
 #           Login
 ##############################################################################
 # Load username and password from file
-login_info = open('login.txt', 'r').read()
-login_info = dict(x.split(':') for x in login_info.split('\n'))
+login_info = get_login()
 # Enter username and password
 element = wait.until(EC.element_to_be_clickable((By.ID, 'username')))
 element.send_keys(login_info['username'])

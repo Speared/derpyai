@@ -1,6 +1,7 @@
 Currently takes a bit of setup on the crawl server to work right
-	server is hard coded to http://crawl.berotato.org:8080/#lobby at the moment
-	you'll need to have a username/password on this server, and enter them into the login.txt file
+    environment variables need to be set up for your server, username and password
+        look at derpyai/login.py for details
+	    you'll need to register a user on your chosen server for this to work too
 	set the rc file for the latest version of crawl to have the settings in rc.txt
 
 Run derpyay.py to run the bot. Note that this project is in its early stages
