@@ -13,11 +13,12 @@ class SetupTests():
     # Log in and enter the game, return the browser object
     @staticmethod
     def setup():
-        browser = webdriver.Chrome()
-        browser.get('http://crawl.berotato.org:8080/#lobby')
-        wait = WebDriverWait(browser, 60)
         # Get login info
         login_info = get_login()
+
+        browser = webdriver.Chrome()
+        browser.get(login_info['server'])
+        wait = WebDriverWait(browser, 60)
         # Enter username/password
         element = wait.until(EC.element_to_be_clickable((By.ID, 'username')))
         element.send_keys(login_info['username'])

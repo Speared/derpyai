@@ -14,14 +14,15 @@ from login import get_login
 from player_behaviour import FindDownStaircase
 from navigate import Navigate
 
+# Load username and password from file
+login_info = get_login()
+
 browser = webdriver.Chrome()
 wait = WebDriverWait(browser, 60)
-browser.get('http://crawl.berotato.org:8080/#lobby')
+browser.get(login_info['server'])
 ##############################################################################
 #           Login
 ##############################################################################
-# Load username and password from file
-login_info = get_login()
 # Enter username and password
 element = wait.until(EC.element_to_be_clickable((By.ID, 'username')))
 element.send_keys(login_info['username'])
