@@ -27,8 +27,6 @@ class DerpyAi(object):
 
         # Tracks if the player dies and we're in the lobby again
         self.dead_state = False
-        # Get the html element to send key presses to the whole page
-        self.html_element = self.browser.find_element_by_tag_name('html')
         self.navigate = Navigate(self.browser)
         # Eventually all player actions should be wrapped up in states
         # With the state only being changed under some conditions
@@ -214,13 +212,17 @@ class DerpyAi(object):
         self.browser.get(self.login_info['server'])
         self.login()
         self.enter_game()
+
+        # Get the html element to send key presses to the whole page
+        self.html_element = self.browser.find_element_by_tag_name('html')
+
         # Main gameplay loop
         while True:
             # Check if the player died, restart the game if so
             if self.dead_state:
                 self.enter_game()
                 self.dead_state = False
-                state = FindDownStaircase(self.browser, self.navigate)
+                self.state = FindDownStaircase(self.browser, self.navigate)
             # Record the current turn, so we know when the it goes up later
             # If this no longer exists we are dead and need to re-enter the game
             try:
