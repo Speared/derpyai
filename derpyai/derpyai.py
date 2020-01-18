@@ -20,10 +20,10 @@ class DerpyAi(object):
 
     def __init__(self):
         # Load username and password from file
-        login_info = get_login()
+        self.login_info = get_login()
 
         self.browser = webdriver.Chrome()
-        self.wait = WebDriverWait(browser, 60)
+        self.wait = WebDriverWait(self.browser, 60)
 
         # Tracks if the player dies and we're in the lobby again
         self.dead_state = False
@@ -46,8 +46,11 @@ class DerpyAi(object):
     def enter_game(self):
         """Select a crawl version and select a character."""
         # Start playing the latest stable version of crawl
-        element = self.wait.until(EC.element_to_be_clickable((By.PARTIAL_LINK_TEXT,
-                                                        '(Latest Version!)')))
+        element = self.wait.until(
+            EC.element_to_be_clickable(
+                (By.PARTIAL_LINK_TEXT, 'Play')
+            )
+        )
         element.send_keys(Keys.RETURN)
         # Character select
         # Select felid berseker every time, for easier decision making
@@ -205,7 +208,7 @@ class DerpyAi(object):
     def main(self):
         """Log in and run main game loop"""
         self.browser.get(self.login_info['server'])
-
+        self.login()
         self.enter_game()
         # Main gameplay loop
         while True:
