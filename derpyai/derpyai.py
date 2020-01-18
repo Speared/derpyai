@@ -48,7 +48,11 @@ class DerpyAi(object):
         # Start playing the latest stable version of crawl
         element = self.wait.until(
             EC.element_to_be_clickable(
-                (By.PARTIAL_LINK_TEXT, 'Play')
+                # TODO: This is really hardcoded
+                # That said, different servers have a different way
+                # to mark the latest version, so dunno what to
+                # actually look for currently.
+                (By.PARTIAL_LINK_TEXT, 'Play 0.24')
             )
         )
         element.send_keys(Keys.RETURN)
@@ -223,7 +227,7 @@ class DerpyAi(object):
                 turncount = (self.browser.find_element_by_id('stats_time').
                              get_attribute('innerHTML'))
             except selenium.common.exceptions.NoSuchElementException:
-                dead_state = True
+                self.dead_state = True
                 continue
             num_enemies = self.check_threats()
             last_message = self.get_last_message()
