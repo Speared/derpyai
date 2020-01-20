@@ -170,27 +170,35 @@ class DerpyAi(object):
         """
         try:
             try:
-                more_message = self.browser.find_element_by_id('more')
-                menu = self.browser.find_element_by_id('menu')
+                menu = self.browser.find_element_by_id('ui-stack')
             except selenium.common.exceptions.NoSuchElementException:
                 # These elements being gone means we're in the lobby
                 # Flag that we need to re-enter game
                 self.dead_state = True
                 return True
             # More message is hidden unless I need to make it go away.
-            # Style changes to none when visible
-            if ('hidden' not in more_message.get_attribute('style') and
-                    'none' not in more_message.get_attribute('style')):
-                print "more message, pressing enter"
-                self.html_element.send_keys(Keys.RETURN)
-                return True
+            try:
+                more_message = self.browser.find_element_by_id('more')
+                if ('hidden' not in more_message.get_attribute('style') and
+                        'none' not in more_message.get_attribute('style')):
+                    print "more message, pressing enter"
+                    self.html_element.send_keys(Keys.RETURN)
+                    return True
+            except selenium.common.exceptions.NoSuchElementException:
+                pass
+
             # Some things (shops) force the menu open
             # So see if the menu is open then just close it
-            if ('hidden' not in menu.get_attribute('style') and
-                    'none' not in menu.get_attribute('style')):
+            try:
+                # Just need to try to get ui-popups attached to
+                # the menu, this will throw an exception if there
+                # are none.
+                menu.find_element_by_class_name('ui-popup')
                 print "menu open, pressing escape"
                 self.html_element.send_keys(Keys.ESCAPE)
                 return True
+            except selenium.common.exceptions.NoSuchElementException:
+                pass
             message = self.get_last_message()
             if "Increase (S)trength, (I)ntelligence, or (D)exterity?" in message:
                 # If we got a stat up always level dex.
