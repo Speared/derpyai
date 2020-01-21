@@ -1,17 +1,15 @@
+# Import built-in modules
 import base64
 from collections import defaultdict
+import os
+import tempfile
 import time
 
+# Import third-party modules
 from PIL import Image
 
-from selenium import webdriver
-from selenium.webdriver.common.keys import Keys
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-import selenium.common.exceptions
-
-from setup_tests import SetupTests
+# Import local modules
+from setup_tests import SetupTests # No longer used
 
 
 class Navigate(object):
@@ -38,7 +36,7 @@ class Navigate(object):
         (170, 102, 68): ("trap", "~", 50),
         (68, 102, 51): ("plant", "p", 25),
         (85, 34, 17): ("lava", "l", -1)
-        }
+    }
 
     #_minimap = None
     #_player_location = (0, 0)
@@ -112,7 +110,9 @@ class Navigate(object):
             print coordinate
             pixels[coordinate] = (255, 255, 0)
         width, height = _minimap.size
-        _minimap.resize((width * 4, height * 4)).save('images/debug_path.bmp')
+        _minimap.resize((width * 4, height * 4)).save(
+            os.path.join(self.image_folder, 'debug_path.bmp')
+        )
         # Undo changes to the map
         self.get_map()
         
@@ -126,7 +126,7 @@ class Navigate(object):
         # Search for the player, starting with the tile they were in
         #   last time we checked, then tiles adjactent to their last position,
         #   then finally just search the whole map
-        #global _player_location
+        #global player_location
         pixels = _minimap.load()
         player = (255, 255, 255)
         # If the player hasn't moved no need to update anything
@@ -140,7 +140,6 @@ class Navigate(object):
                 return self.player_location
         self.player_location = self.get_map_feature('@')[0]
         return self.player_location
-        
 
     # Finds all the tiles matching a given name/glyph/a* value
     def get_map_feature(self, findme):
@@ -168,12 +167,13 @@ class Navigate(object):
         _minimap = base64.b64decode(_minimap)
         # TODO: could probably skip these steps and convert
         #   the png in memory directly into an image
-        with open(r"images/_minimap.png", 'wb') as f:
+        minimap_path = os.path.join(self.image_folder, '_minimap.png')
+        with open(minimap_path, 'wb') as f:
             f.write(_minimap)
         # Open the new png as a PIL Image
-        _minimap = Image.open("images/_minimap.png").convert("RGB")
+        _minimap = Image.open(minimap_path).convert("RGB")
         # Get the tilesize of the _minimap, then scale
-        #   down the map so there's no wasted pixles
+        #   down the map so there's no wasted pixels
         inject_script = open('get_minimap_tile_size_inject.js', 'r').read()
         tilesize = self.browser.execute_script(inject_script)
         width, height = _minimap.size
@@ -186,7 +186,7 @@ class Navigate(object):
             for y in range(y_tiles):
                 shrunk_pixles[(x, y)] = map_pixels[(x * tilesize, y * tilesize)]
         _minimap = shrunk_minimap
-        _minimap.save('images/debug_map.bmp')
+        _minimap.save(os.path.join(self.image_folder, 'debug_map.bmp'))
 
     def get_path(self, start, goal):
         startingNode = self._get_a_node(start, None)
@@ -251,45 +251,50 @@ class Navigate(object):
     def __init__(self, browser):
         self.browser = browser
         self.player_location = (0, 0)
+        self.image_folder = tempfile.mkdtemp("derpy_images_")
 
 
-if __name__ == "__main__":
-    browser = SetupTests.setup()
-    navigate = Navigate(browser)
-    print "\nget map"
-    navigate.get_map()
-    print "\nsample frequencies"
-    navigate._get_map_frequencies()
-    print "\nfind down staircases"
-    downstairs = navigate.get_map_feature('>')
-    for stairs in downstairs:
-        print stairs
-    print "\nfind player"
-    player = navigate.get_map_feature('@')[0]
-    print player
-    print "\nfind player's neighbors"
-    neighbors = navigate._get_neighbors(player)
-    for neighbor in neighbors:
-        print neighbor
-    print "\nfind a path to a staircase"
-    if len(downstairs) > 0:
-        path = navigate.get_path(player, downstairs[0])
-        if path is not None:
-            navigate._debug_print_path(path)
-        else:
-            print "No path found"
-    turncount = (browser.find_element_by_id('stats_time').
-                get_attribute('innerHTML'))
-    while True:
-        newturncount = (browser.find_element_by_id('stats_time').
-                        get_attribute('innerHTML'))
-        if turncount != newturncount:
-            turncount = newturncount
-            # Spam the console so I don't forget 
-            #   what might be lagging the game
-            print "!!Printing map!!"
-            filename = 'images/minimap_prints/{0}.bmp'.format(turncount)
-            navigate._debug_print_map(filename)
-        time.sleep(0.1)
+# Leaving this code in for now, but some of it is likely broken currently, and
+# with any luck pathfinding already works well enough that this won't be
+# needed.
+
+# if __name__ == "__main__":
+#     browser = SetupTests.setup()
+#     navigate = Navigate(browser)
+#     print "\nget map"
+#     navigate.get_map()
+#     print "\nsample frequencies"
+#     navigate._get_map_frequencies()
+#     print "\nfind down staircases"
+#     downstairs = navigate.get_map_feature('>')
+#     for stairs in downstairs:
+#         print stairs
+#     print "\nfind player"
+#     player = navigate.get_map_feature('@')[0]
+#     print player
+#     print "\nfind player's neighbors"
+#     neighbors = navigate._get_neighbors(player)
+#     for neighbor in neighbors:
+#         print neighbor
+#     print "\nfind a path to a staircase"
+#     if len(downstairs) > 0:
+#         path = navigate.get_path(player, downstairs[0])
+#         if path is not None:
+#             navigate._debug_print_path(path)
+#         else:
+#             print "No path found"
+#     turncount = (browser.find_element_by_id('stats_time').
+#                 get_attribute('innerHTML'))
+#     while True:
+#         newturncount = (browser.find_element_by_id('stats_time').
+#                         get_attribute('innerHTML'))
+#         if turncount != newturncount:
+#             turncount = newturncount
+#             # Spam the console so I don't forget
+#             #   what might be lagging the game
+#             print "!!Printing map!!"
+#             filename = 'images/minimap_prints/{0}.bmp'.format(turncount)
+#             navigate._debug_print_map(filename)
+#         time.sleep(0.1)
              
         
