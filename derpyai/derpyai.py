@@ -61,20 +61,15 @@ class DerpyAi(object):
         self.wait.until((EC.presence_of_element_located((By.CSS_SELECTOR,
                                                     '.fg14, .game_message'))))
         try:
-            if self.browser.find_element_by_xpath('//*[@id="crt"]/span[1]/span[2]'):
-                print "selecting character"
-                element = self.browser.find_element_by_tag_name('html')
-                element.send_keys('y')
-                self.wait.until(EC.text_to_be_present_in_element(
-                            (By.XPATH, '//*[@id="crt"]/span[1]/span[2]'),
-                            'Please select your background.'))
-                element = self.browser.find_element_by_tag_name('html')
-                element.send_keys('e')
-                # Now that we're logged in wait for the first game message
-                self.wait.until(EC.presence_of_element_located(
-                            (By.CLASS_NAME, 'game_message')))
+            self.browser.find_element_by_xpath(
+                "//*[contains(text(), 'y - Felid')]").click()
+            self.browser.find_element_by_xpath(
+                "//*[contains(text(), 'e - Berserker')]").click()
         except selenium.common.exceptions.NoSuchElementException:
             pass
+        # Now that we're logged in wait for the first game message
+        self.wait.until(EC.presence_of_element_located(
+            (By.CLASS_NAME, 'game_message')))
 
     def get_last_message(self):
         """Return the last message printed by the game."""
